@@ -1,0 +1,20 @@
+{
+  "name": "discord-bluesky-status-poster",
+  "version": "1.0.0",
+  "description": "Takes statuses from my Discord account and posts them on my BlueSky",
+  "main": "index.js",
+  "scripts": {
+    "test": "node index.js"
+  },
+  "keywords": [
+    "bsky",
+    "discord",
+    "bluesky"
+  ],
+  "author": "micahbdev",
+  "license": "ISC",
+  "dependencies": {
+    "@atproto/api": "^0.14.7",
+    "discord.js": "^14.18.0"
+  }
+}
