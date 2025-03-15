@@ -32,6 +32,9 @@ client.on('presenceUpdate', async (o, n) => {
             if (thisStatus != lastStatus) {
                 lastStatus = thisStatus;
 
+                /**
+                 * @type {Discord.TextChannel}
+                 */
                 const channel = await client.channels.fetch(config.discordChannelId);
 
                 // Check that it wasn't one that I or the bot already posted.
@@ -40,7 +43,9 @@ client.on('presenceUpdate', async (o, n) => {
                 const alreadyPosted = (await messages.fetch({ limit: 100 })).some((v) => v.content == thisStatus)
 
                 if (!alreadyPosted) {
-                    channel.send(thisStatus);
+                    channel.send({
+                        content: "@silent" + thisStatus,
+                    });
                     agent.post({
                         text: thisStatus
                     });
