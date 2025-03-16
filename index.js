@@ -44,7 +44,7 @@ client.on('presenceUpdate', async (o, n) => {
 
                 if (!alreadyPosted) {
                     channel.send({
-                        content: "@silent" + thisStatus,
+                        content: "@silent " + thisStatus,
                     });
                     agent.post({
                         text: thisStatus
