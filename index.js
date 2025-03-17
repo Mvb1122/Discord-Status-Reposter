@@ -44,7 +44,10 @@ client.on('presenceUpdate', async (o, n) => {
 
                 if (!alreadyPosted) {
                     channel.send({
-                        content: "@silent " + thisStatus,
+                        content: thisStatus,
+                        flags: [
+                            Discord.MessageFlags.SuppressNotifications
+                        ]
                     });
                     agent.post({
                         text: thisStatus
