@@ -3,7 +3,7 @@ const Discord = require('discord.js');
 const fs = require('fs');
 
 /**
- * @type {{ bskyName: string; bskyPass: string; discordUserID: string; discordBotToken: string; discordGuildID: string; discordChannelId: string; discordSuppressNotifications: boolean; }} 
+ * @type {{ bskyName: string; bskyPass: string; discordUserID: string; discordBotToken: string; discordGuildID: string; discordChannelId: string; }} 
  */
 const config = JSON.parse(fs.readFileSync("./config.json"));
 
@@ -41,15 +41,13 @@ client.on('presenceUpdate', async (o, n) => {
                 /** @type {Discord.GuildMessageManager} */
                 const messages = channel.messages;
                 const alreadyPosted = (await messages.fetch({ limit: 100 })).some((v) => v.content == thisStatus)
-                const flags = [];
-                if (config.discordSuppressNotifications) {
-                    flags.push(Discord.MessageFlags.SuppressNotifications);
-                }
 
                 if (!alreadyPosted) {
                     channel.send({
                         content: thisStatus,
-                        flags
+                        flags: [
+                            Discord.MessageFlags.SuppressNotifications
+                        ]
                     });
                     agent.post({
                         text: thisStatus
