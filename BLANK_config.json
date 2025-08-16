@@ -4,5 +4,6 @@
     "discordUserID": "",
     "discordBotToken": "",
     "discordGuildID": "",
-    "discordChannelId": ""
+    "discordChannelId": "",
+    "discordSuppressNotifications": true
 }
