@@ -15,11 +15,18 @@ const client = new Discord.Client({
     ],
 });
 
-client.on('ready', async () => {
-    await agent.login({ identifier: config.bskyName, password: config.bskyPass })
+// Loading is faster when we do both at the same time.
+const loginProms = [
+    // Technically this will wait until after the file is completed but it should be reasonably okay.
+    new Promise(res => {
+        client.on('ready', () => {res();})
+    }),
+    agent.login({ identifier: config.bskyName, password: config.bskyPass })
+]
 
-    console.log("Ready!");
-})
+Promise.all(loginProms).then(v => {
+    console.log("Ready!")
+});
 
 //#region Watch for User's status updating and save it automatically.
     // Fun fact: Because of this function being called async, there's a sad possibility that the same status can be sent multiple times.
@@ -44,15 +51,11 @@ client.on('presenceUpdate', async (o, newActivity) => {
                 /** @type {Discord.GuildMessageManager} */
                 const messages = channel.messages;
                 const alreadyPosted = (await messages.fetch({ limit: 100 })).some((v) => v.content == thisStatus)
-                const flags = [];
-                if (config.discordSuppressNotifications) {
-                    flags.push(Discord.MessageFlags.SuppressNotifications);
-                }
 
                 if (!alreadyPosted) {
                     channel.send({
                         content: thisStatus,
-                        flags
+                        flags: config.discordSuppressNotifications ? [Discord.MessageFlags.SuppressNotifications] : undefined
                     });
                     agent.post({
                         text: thisStatus
