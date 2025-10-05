@@ -1,6 +1,8 @@
 {
     "bskyName": "",
     "bskyPass": "",
+    "mastodonEnabled": true,
+    "mastodonToken": "",
     "discordUserID": "",
     "discordBotToken": "",
     "discordGuildID": "",

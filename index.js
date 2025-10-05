@@ -1,14 +1,24 @@
+const mastodonURL = "https://mastodon.social";
+
 const { default: AtpAgent } = require("@atproto/api"); // Bluesky AtProtocol bot stuff.
 const Discord = require('discord.js');
 const fs = require('fs');
+const { createRestAPIClient } = require("masto"); // Mastodon ActivityPub stuff.
 
 /**
- * @type {{ bskyName: string; bskyPass: string; discordUserID: string; discordBotToken: string; discordGuildID: string; discordChannelId: string; discordSuppressNotifications: boolean; }} 
+ * Go look at the BLANK_config.json / config.json file and then figure it out yourself what the keys to this are. :)
  */
 const config = JSON.parse(fs.readFileSync("./config.json")); // Throws error if file doesn't exist - this is intended behavior.
 
-const agent = new AtpAgent({ service: 'https://bsky.social' });
-const client = new Discord.Client({
+let masto;
+if (config.mastodonEnabled)
+    masto = createRestAPIClient({
+        url: mastodonURL,
+        accessToken: config.mastodonToken,
+    });
+
+const bskyClient = new AtpAgent({ service: 'https://bsky.social' });
+const discordClient = new Discord.Client({
     intents: [
         Discord.GatewayIntentBits.Guilds,
         Discord.GatewayIntentBits.GuildPresences,
@@ -19,9 +29,10 @@ const client = new Discord.Client({
 const loginProms = [
     // Technically this will wait until after the file is completed but it should be reasonably okay.
     new Promise(res => {
-        client.on('ready', () => {res();})
+        discordClient.on('ready', () => {res();})
     }),
-    agent.login({ identifier: config.bskyName, password: config.bskyPass })
+    bskyClient.login({ identifier: config.bskyName, password: config.bskyPass })
+    // Mastodon uses a different auth system where it doesn't log on using a promise. 
 ]
 
 Promise.all(loginProms).then(v => {
@@ -33,7 +44,7 @@ Promise.all(loginProms).then(v => {
     // And because this is in such quick succession (I think I saw like 8 times / sec at one point), I need a variable to track the last one posted,
     // even if we can get the same data from checking the last 100 messages... Because the message check is SLOW. :(
 let lastStatus = "";
-client.on('presenceUpdate', async (o, newActivity) => {
+discordClient.on('presenceUpdate', async (o, newActivity) => {
     try {
         if (newActivity.activities.length > 0 && (newActivity.status != 'invisible' || newActivity.status != 'offline') && newActivity.userId == config.discordUserID) {
             const thisActivity = newActivity.activities[0];
@@ -45,7 +56,7 @@ client.on('presenceUpdate', async (o, newActivity) => {
                 /**
                  * @type {Discord.TextChannel}
                  */
-                const channel = await client.channels.fetch(config.discordChannelId);
+                const channel = await discordClient.channels.fetch(config.discordChannelId);
 
                 // Check that it wasn't one that I or the bot already posted.
                 /** @type {Discord.GuildMessageManager} */
@@ -53,13 +64,22 @@ client.on('presenceUpdate', async (o, newActivity) => {
                 const alreadyPosted = (await messages.fetch({ limit: 100 })).some((v) => v.content == thisStatus)
 
                 if (!alreadyPosted) {
+                    // Send to Discord
                     channel.send({
                         content: thisStatus,
                         flags: config.discordSuppressNotifications ? [Discord.MessageFlags.SuppressNotifications] : undefined
                     });
-                    agent.post({
+
+                    // Send to BlueSky
+                    bskyClient.post({
                         text: thisStatus
                     });
+
+                    // Send to Mastodon
+                    if (config.mastodonEnabled)
+                        masto.v1.statuses.create({
+                            status: thisStatus,
+                        });
                 }
             }
         }
@@ -68,4 +88,4 @@ client.on('presenceUpdate', async (o, newActivity) => {
     }
 })
 
-client.login(config.discordBotToken);
+discordClient.login(config.discordBotToken);
