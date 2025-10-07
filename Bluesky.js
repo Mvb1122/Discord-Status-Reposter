@@ -3,29 +3,48 @@ const { config } = require(".");
 const Network = require("./Network");
 const bskyClient = new AtpAgent({ service: 'https://bsky.social' });
 
+/**
+ * @type {Promise<{
+    uri: string;
+    cid: string;
+}>}
+ */
+let lastPost = null;
+
 module.exports = class Bluesky extends Network {
     /**
      * Logs onto the network.
      * @returns {Promise} Resolves when complete.
      */
-    Logon() {
+    logon() {
         return bskyClient.login({ identifier: config.bskyName, password: config.bskyPass })
     }
 
     /**
      * Posts to the network as a new post.
+     * @param {string} thisStatus Text to send.
      * @returns {Promise} Resolves when complete.
      */
-    Post() {
-        return bskyClient.post({ text: thisStatus });
+    post(thisStatus) {
+        lastPost = bskyClient.post({ text: thisStatus });
+        return lastPost;
     }
 
     /**
      * Replies to the last post. 
+     * @param {string} thisStatus Text to send.
      * @returns {Promise} Resolves when complete.
      */
-    ReplyLast() {
-    
+    replyLast(thisStatus) {
+        if (lastPost == null) return null;
+        else {
+            bskyClient.post({
+                text: thisStatus,
+                reply: {
+                    parent: lastPost
+                }
+            });
+        }
     }
     
     /**

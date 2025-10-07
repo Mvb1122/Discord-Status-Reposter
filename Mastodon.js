@@ -3,7 +3,15 @@ const { createRestAPIClient } = require("masto"); // Mastodon ActivityPub stuff.
 const { config } = require(".");
 const Network = require("./Network");
 
+/**
+ * @type {import("masto/mastodon/rest/client.js").Client}
+ */
 let masto;
+
+/**
+ * @type {import("masto/mastodon/entities/v1/status.js").Status}
+ */
+let lastStatus = null;
 
 class Mastodon extends Network {
     /**
@@ -21,9 +29,10 @@ class Mastodon extends Network {
 
     /**
      * Posts to the network as a new post.
+     * @param {string} thisStatus Text to send.
      * @returns {Promise} Resolves when complete.
      */
-    post() {
+    post(thisStatus) {
         return masto.v1.statuses.create({
             status: thisStatus,
         });
@@ -31,10 +40,17 @@ class Mastodon extends Network {
 
     /**
      * Replies to the last post. 
+     * @param {string} thisStatus Text to send.
      * @returns {Promise} Resolves when complete.
      */
-    replyLast() {
-
+    replyLast(thisStatus) {
+        if (lastStatus != null) {
+            lastStatus = masto.v1.statuses.create({
+                inReplyToId: lastStatus.id,
+                status: thisStatus
+            });
+            return lastStatus;
+        }
     }
 
     /**

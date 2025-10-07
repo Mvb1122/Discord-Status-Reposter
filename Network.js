@@ -9,17 +9,19 @@ class Network {
 
     /**
      * Posts to the network as a new post.
+     * @param {string} thisStatus Text to send.
      * @returns {Promise} Resolves when complete.
      */
-    post() {
+    post(thisStatus) {
 
     }
 
     /**
      * Replies to the last post. 
+     * @param {string} thisStatus Text to send.
      * @returns {Promise} Resolves when complete.
      */
-    replyLast() {
+    replyLast(thisStatus) {
 
     }
 
