@@ -1,23 +1,23 @@
-const mastodonURL = "https://mastodon.social";
-
-const { default: AtpAgent } = require("@atproto/api"); // Bluesky AtProtocol bot stuff.
 const Discord = require('discord.js');
 const fs = require('fs');
-const { createRestAPIClient } = require("masto"); // Mastodon ActivityPub stuff.
 
 /**
  * Go look at the BLANK_config.json / config.json file and then figure it out yourself what the keys to this are. :)
  */
 const config = JSON.parse(fs.readFileSync("./config.json")); // Throws error if file doesn't exist - this is intended behavior.
+module.exports = {
+    config
+};
 
-let masto;
-if (config.mastodonEnabled)
-    masto = createRestAPIClient({
-        url: mastodonURL,
-        accessToken: config.mastodonToken,
-    });
+const Mastodon = require('./Mastodon');
+const Bluesky = require('./Bluesky');
+const Network = require('./Network');
 
-const bskyClient = new AtpAgent({ service: 'https://bsky.social' });
+/**
+ * @type {Network[]}
+ */
+const networks = [new Mastodon(), new Bluesky()]
+
 const discordClient = new Discord.Client({
     intents: [
         Discord.GatewayIntentBits.Guilds,
@@ -26,14 +26,12 @@ const discordClient = new Discord.Client({
 });
 
 // Loading is faster when we do both at the same time.
-const loginProms = [
+const loginProms = networks.map(v => v.logon()).concat([
     // Technically this will wait until after the file is completed but it should be reasonably okay.
     new Promise(res => {
         discordClient.on('ready', () => {res();})
-    }),
-    bskyClient.login({ identifier: config.bskyName, password: config.bskyPass })
-    // Mastodon uses a different auth system where it doesn't log on using a promise. 
-]
+    })
+]);
 
 Promise.all(loginProms).then(v => {
     console.log("Ready!")
@@ -70,16 +68,11 @@ discordClient.on('presenceUpdate', async (o, newActivity) => {
                         flags: config.discordSuppressNotifications ? [Discord.MessageFlags.SuppressNotifications] : undefined
                     });
 
-                    // Send to BlueSky
-                    bskyClient.post({
-                        text: thisStatus
-                    });
-
-                    // Send to Mastodon
-                    if (config.mastodonEnabled)
-                        masto.v1.statuses.create({
-                            status: thisStatus,
-                        });
+                    networks.forEach(v => {
+                        if (v.isEnabled()) {
+                            v.post(thisStatus);
+                        }
+                    })
                 }
             }
         }
