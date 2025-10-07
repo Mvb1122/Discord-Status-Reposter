@@ -1,15 +1,17 @@
+const bskyURL = 'https://bsky.social';
+
 const { default: AtpAgent } = require("@atproto/api"); // Bluesky AtProtocol bot stuff.
 const { config } = require(".");
 const Network = require("./Network");
-const bskyClient = new AtpAgent({ service: 'https://bsky.social' });
+const bskyClient = new AtpAgent({ service: bskyURL });
 
 /**
- * @type {Promise<{
+ * @type {Map<String, Promise<{
     uri: string;
     cid: string;
-}>}
+}>>}
  */
-let lastPost = null;
+let posts = new Map();
 
 module.exports = class Bluesky extends Network {
     /**
@@ -26,24 +28,27 @@ module.exports = class Bluesky extends Network {
      * @returns {Promise} Resolves when complete.
      */
     post(thisStatus) {
-        lastPost = bskyClient.post({ text: thisStatus });
-        return lastPost;
+        let thisPost = bskyClient.post({ text: thisStatus });
+        posts.set(thisStatus, thisPost);
+        return thisPost;
     }
 
     /**
-     * Replies to the last post. 
-     * @param {string} thisStatus Text to send.
+     * Replies to the last post with the specified text, with the specified text. 
+     * @param {string} newText Text to send.
+     * @param {string} oldText Text of the post to reply to.
      * @returns {Promise} Resolves when complete.
      */
-    replyLast(thisStatus) {
-        if (lastPost == null) return null;
-        else {
-            bskyClient.post({
-                text: thisStatus,
+    replyTo(oldText, newText) {
+        const parentPost = posts.get(oldText);
+        if (parentPost != null) {
+            const replyPost = bskyClient.post({
+                text: newText,
                 reply: {
-                    parent: lastPost
+                    parent: parentPost
                 }
             });
+            posts.set(newText, replyPost);
         }
     }
     

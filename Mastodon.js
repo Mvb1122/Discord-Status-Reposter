@@ -9,9 +9,9 @@ const Network = require("./Network");
 let masto;
 
 /**
- * @type {import("masto/mastodon/entities/v1/status.js").Status}
+ * @type {Map<String, import("masto/mastodon/entities/v1/status.js").Status>}
  */
-let lastStatus = null;
+let posts = new Map();
 
 class Mastodon extends Network {
     /**
@@ -33,23 +33,28 @@ class Mastodon extends Network {
      * @returns {Promise} Resolves when complete.
      */
     post(thisStatus) {
-        return masto.v1.statuses.create({
+        let thisPost = masto.v1.statuses.create({
             status: thisStatus,
         });
+        
+        posts.set(thisStatus, thisPost);
     }
 
     /**
-     * Replies to the last post. 
-     * @param {string} thisStatus Text to send.
+     * Replies to the last post with the specified text, with the specified text. 
+     * @param {string} newText Text to send.
+     * @param {string} oldText Text of the post to reply to.
      * @returns {Promise} Resolves when complete.
      */
-    replyLast(thisStatus) {
-        if (lastStatus != null) {
-            lastStatus = masto.v1.statuses.create({
-                inReplyToId: lastStatus.id,
-                status: thisStatus
+    replyTo(oldText, newText) {
+        let parentPost = posts.get(oldText);
+        if (parentPost != null) {
+            let reply = masto.v1.statuses.create({
+                inReplyToId: parentPost.id,
+                status: newText
             });
-            return lastStatus;
+            posts.set(newText, reply);
+            return reply;
         }
     }
 

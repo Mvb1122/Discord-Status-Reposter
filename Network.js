@@ -17,11 +17,12 @@ class Network {
     }
 
     /**
-     * Replies to the last post. 
-     * @param {string} thisStatus Text to send.
+     * Replies to the last post with the specified text, with the specified text. 
+     * @param {string} newText Text to send.
+     * @param {string} oldText Text of the post to reply to.
      * @returns {Promise} Resolves when complete.
      */
-    replyLast(thisStatus) {
+    replyTo(oldText, newText) {
 
     }
 

@@ -68,6 +68,7 @@ discordClient.on('presenceUpdate', async (o, newActivity) => {
                         flags: config.discordSuppressNotifications ? [Discord.MessageFlags.SuppressNotifications] : undefined
                     });
 
+                    // Send to all enabled networks.
                     networks.forEach(v => {
                         if (v.isEnabled()) {
                             v.post(thisStatus);
@@ -81,4 +82,45 @@ discordClient.on('presenceUpdate', async (o, newActivity) => {
     }
 })
 
+
+
+// When someone sends a reply, check if the root post (that is, the last post in the chain of replies) belongs to us.
+    // If it does: Post the reply to the posts on the networks.
+discordClient.on("messageCreate", async (message) => {
+    let root = await getRootMessage(message);
+    const parent = await getReferencedMessage(message)
+
+    if (root.author.id == discordClient.user.id) {
+        // Now we can post replies.
+        networks.forEach(nw => {
+            if (nw.isEnabled()) nw.replyTo(parent.content, message.content);
+        });
+    }
+})
+
 discordClient.login(config.discordBotToken);
+
+async function getRootMessage(message) {
+    let root = message;
+    while (root.reference != null) {
+        // Move up chain of replies.
+        root = await getReferencedMessage(root);
+    }
+    return root;
+}
+
+/**
+ * Gets the message referenced by message reference property.
+ * @param {Discord.Message} root 
+ * @returns {Promise<Discord.Message>}
+ */
+async function getReferencedMessage(root) {
+    // I guess this is the proper way to follow the chain of replies? Since you can cross-channel reply... Maybe they'll add cross-server replies. IDK.
+    const replyChannel = await (discordClient.guilds.cache.get(root.reference.guildId)
+        .channels.fetch(root.reference.channelId));
+
+    root = replyChannel.messages.fetch({
+        id: root.reference.messageId
+    });
+    return root;
+}
