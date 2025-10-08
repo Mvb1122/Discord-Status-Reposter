@@ -1,7 +1,8 @@
 # SETUP: 
 1. Copy and fill out `BLANK_config.json`.
 2. Rename your copy to `config.json`
-3. Make sure your Discord bot has presence intent, can see the channel you specified and is in a server with specified user.
+3. Make a Discord bot application thing. 
+    1. Make sure your Discord bot has presence and message contents intent, can see the channel you specified and is in a server with specified user.
 4. Run `node index.js`
 5. Change the status of the user in question. It should send everything through.
 

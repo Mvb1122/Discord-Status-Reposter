@@ -22,7 +22,8 @@ const discordClient = new Discord.Client({
     intents: [
         Discord.GatewayIntentBits.Guilds,
         Discord.GatewayIntentBits.GuildPresences,
-        Discord.GatewayIntentBits.MessageContent
+        Discord.GatewayIntentBits.MessageContent,
+        Discord.GatewayIntentBits.GuildMessages
     ],
 });
 
@@ -75,6 +76,9 @@ discordClient.on('presenceUpdate', async (o, newActivity) => {
                             v.post(thisStatus);
                         }
                     })
+
+                    console.log("Relayed status: " + thisStatus);
+                    
                 }
             }
         }
@@ -88,14 +92,18 @@ discordClient.on('presenceUpdate', async (o, newActivity) => {
 // When someone sends a reply, check if the root post (that is, the last post in the chain of replies) belongs to us.
     // If it does: Post the reply to the posts on the networks.
 discordClient.on("messageCreate", async (message) => {
-    let root = await getRootMessage(message);
-    const parent = await getReferencedMessage(message)
+    if (message.reference != null) {
+        let root = await getRootMessage(message);
+        const parent = await getReferencedMessage(message);
 
-    if (root.author.id == discordClient.user.id) {
-        // Now we can post replies.
-        networks.forEach(nw => {
-            if (nw.isEnabled()) nw.replyTo(parent.content, message.content);
-        });
+        if (root.author.id == discordClient.user.id) {
+            console.log("Relaying reply to old message: " + parent.content + "\nWith new message: " + message.content)
+
+            // Now we can post replies.
+            networks.forEach(nw => {
+                if (nw.isEnabled()) nw.replyTo(parent.content, message.content);
+            });
+        }
     }
 })
 
@@ -120,8 +128,5 @@ async function getReferencedMessage(root) {
     const replyChannel = await (discordClient.guilds.cache.get(root.reference.guildId)
         .channels.fetch(root.reference.channelId));
 
-    root = replyChannel.messages.fetch({
-        id: root.reference.messageId
-    });
-    return root;
+    return replyChannel.messages.fetch(root.reference.messageId);
 }
