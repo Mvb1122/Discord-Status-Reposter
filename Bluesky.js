@@ -80,8 +80,8 @@ module.exports = class Bluesky extends Network {
                     parent: await parentPost,
                     root: root 
                 },
-                
             });
+
             posts.set(newText, replyPost);
             savePosts(); // Save after every post.
 

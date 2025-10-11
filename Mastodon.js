@@ -12,7 +12,7 @@ const fs = require('fs');
 let masto;
 
 /**
- * @type {Map<String, import("masto/mastodon/entities/v1/status.js").Status>}
+ * @type {Map<String, Promise<import("masto/mastodon/entities/v1/status.js").Status>>}
  */
 let posts = new Map();
 
@@ -82,7 +82,7 @@ class Mastodon extends Network {
         let parentPost = posts.get(oldText);
         if (parentPost != null) {
             let reply = masto.v1.statuses.create({
-                inReplyToId: parentPost.id,
+                inReplyToId: (await parentPost).id,
                 status: newText
             });
             
