@@ -8,10 +8,7 @@ const Network = require("./Network");
 const bskyClient = new AtpAgent({ service: bskyURL });
 
 /**
- * @type {Map<String, Promise<{
-    uri: string;
-    cid: string;
-}>>}
+ * @type {Map<String, Promise<{uri: string;cid: string;}>>}
  */
 let posts = new Map();
 
@@ -41,13 +38,21 @@ process.on("beforeExit", () => {
     savePosts();
 });
 
+/**
+ * @param {{uri: string;cid: string;}} post 
+ * @returns {Promise<import('@atproto/api/dist/client/types/app/bsky/feed/defs').PostView>}
+ */
+async function fetchPost(post) {
+    return (await bskyClient.getPosts({uris: [post.uri]})).data.posts[0];
+}
+
 module.exports = class Bluesky extends Network {
     /**
      * Logs onto the network.
      * @returns {Promise} Resolves when complete.
      */
     logon() {
-        return bskyClient.login({ identifier: config.bskyName, password: config.bskyPass })
+        return bskyClient.login({ identifier: config.bskyName, password: config.bskyPass });
     }
 
     /**
@@ -71,8 +76,8 @@ module.exports = class Bluesky extends Network {
     async replyTo(oldText, newText) {
         const parentPost = posts.get(oldText);
         if (parentPost != null) {
-            const parentAsObject = (await bskyClient.getPosts({uris: [(await parentPost).uri]})).data.posts[0];
-            const root = parentAsObject.reply ? parentAsObject.reply.root : await parentPost;
+            const parentAsObject = await fetchPost(await parentPost);
+            const root = parentAsObject.record.reply ? parentAsObject.record.reply.root : await parentPost;
             
             const replyPost = bskyClient.post({
                 text: newText,
