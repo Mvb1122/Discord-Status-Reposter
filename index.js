@@ -36,7 +36,7 @@ const loginProms = networks.map(v => v.logon()).concat([
 ]);
 
 Promise.all(loginProms).then(v => {
-    console.log("Ready!")
+    console.log("Ready!");
 });
 
 //#region Watch for User's status updating and save it automatically.

@@ -9,6 +9,7 @@ const bskyClient = new AtpAgent({ service: bskyURL });
 
 /**
  * @type {Map<String, Promise<{uri: string;cid: string;}>>}
+ * @type {Map<String, Promise<{uri: string;cid: string;}>>}
  */
 let posts = new Map();
 
@@ -37,6 +38,14 @@ async function savePosts() {
 process.on("beforeExit", () => {
     savePosts();
 });
+
+/**
+ * @param {{uri: string;cid: string;}} post 
+ * @returns {Promise<import('@atproto/api/dist/client/types/app/bsky/feed/defs').PostView>}
+ */
+async function fetchPost(post) {
+    return (await bskyClient.getPosts({uris: [post.uri]})).data.posts[0];
+}
 
 /**
  * @param {{uri: string;cid: string;}} post 
@@ -77,7 +86,12 @@ module.exports = class Bluesky extends Network {
         const parentPost = posts.get(oldText);
         if (parentPost != null) {
             const parentAsObject = await fetchPost(await parentPost);
-            const root = parentAsObject.record.reply ? parentAsObject.record.reply.root : await parentPost;
+            /**
+             * I went through the effort of documenting this because apparently it wasn't written down anywhere? See the BlueskyReply file.
+             * @type {import('./BlueskyReply').BlueskyReply | undefined}
+             */
+            const reply = parentAsObject.record.reply; 
+            const root = reply ? reply.root : await parentPost;
             
             const replyPost = bskyClient.post({
                 text: newText,
