@@ -139,7 +139,7 @@ if (config.discordMirrorAvatarUpdates == true) {
     };
 
     discordClient.on('userUpdate', (oldUser, newUser) => {
-        if (oldUser.userId == config.discordUserID) {
+        if (oldUser.id !== config.discordUserID) {
             return;
         }
         const oldAvatarUrl = oldUser.avatarURL(avatarImageUrlOptions);
