@@ -115,4 +115,19 @@ module.exports = class Bluesky extends Network {
     isEnabled() {
         return true;
     }
+
+    /**
+     * Sets the profile picture with the specified URL.
+     * @param {string} url The URL of the avatar,
+     */
+    async setAvatar(url) {
+        const avatarData = await super.setAvatar(url);
+        const blobUploadResponse = await bskyClient.uploadBlob(avatarData, {
+            encoding: "image/png",
+        });
+        await bskyClient.upsertProfile((record => {
+            record.avatar = blobUploadResponse.data.blob
+            return record
+        }));
+    }
 }

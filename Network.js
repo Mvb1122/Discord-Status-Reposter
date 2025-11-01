@@ -33,6 +33,19 @@ class Network {
     isEnabled() {
         return true;
     }
+
+    /**
+     * Sets the profile picture with the specified URL.
+     * @param {string} url The URL of the avatar,
+     */
+    async setAvatar(url) {
+        return fetch(url).then((response) => {
+            if (!response.ok) {
+                throw new Error(`HTTP error ${response.status}.`);
+            }
+            return response.blob();
+        })
+    }
 }
 
 module.exports = Network

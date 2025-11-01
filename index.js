@@ -130,3 +130,29 @@ async function getReferencedMessage(root) {
 
     return replyChannel.messages.fetch(root.reference.messageId);
 }
+
+if (config.discordMirrorAvatarUpdates == true) {
+    /** @type {Discord.ImageURLOptions} */
+    const avatarImageUrlOptions = {
+        extension: "png",
+        forceStatic: true,
+    };
+
+    discordClient.on('userUpdate', (oldUser, newUser) => {
+        if (oldUser.userId == config.discordUserID) {
+            return;
+        }
+        const oldAvatarUrl = oldUser.avatarURL(avatarImageUrlOptions);
+        const newAvatarUrl = newUser.avatarURL(avatarImageUrlOptions);
+        if (oldAvatarUrl !== newAvatarUrl) {
+            // Avatar changed. Update to applicable networks.
+            networks.forEach(network => {
+                if (network.isEnabled()) {
+                    network.setAvatar(newAvatarUrl).catch((error) => {
+                        console.error(`Failed to update avatar on ${network.constructor.name}`, error)
+                    })
+                }
+            });
+        }
+    });
+}
