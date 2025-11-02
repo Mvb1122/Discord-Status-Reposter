@@ -118,8 +118,8 @@ module.exports = class Bluesky extends Network {
     }
 
     /**
-     * Sets the profile picture with the specified URL.
-     * @param {AvatarCache} avatarCache The avatar cache instance,
+     * Sets the profile picture from an AvatarCache instance.
+     * @param {AvatarCache} avatarCache The AvatarCache instance
      */
     async setAvatar(avatarCache) {
         const avatarBlob = await avatarCache.fetch({

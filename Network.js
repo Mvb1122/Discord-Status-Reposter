@@ -1,3 +1,5 @@
+/** @import AvatarCache from './AvatarCache'; */
+
 class Network {
     /**
      * Logs onto the network.
@@ -35,10 +37,10 @@ class Network {
     }
 
     /**
-     * Sets the profile picture with the specified URL.
-     * @param {string} url The URL of the avatar.
+     * Sets the profile picture from an AvatarCache instance.
+     * @param {AvatarCache} avatarCache The AvatarCache instance.
      */
-    async setAvatar(url) {
+    async setAvatar(avatarCache) {
 
     }
 }
