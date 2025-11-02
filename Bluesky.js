@@ -6,6 +6,7 @@ const { default: AtpAgent } = require("@atproto/api"); // Bluesky AtProtocol bot
 const { config } = require(".");
 const Network = require("./Network");
 const bskyClient = new AtpAgent({ service: bskyURL });
+/** @import AvatarCache from './AvatarCache'; */
 
 /**
  * @type {Map<String, Promise<{uri: string;cid: string;}>>}
@@ -118,11 +119,15 @@ module.exports = class Bluesky extends Network {
 
     /**
      * Sets the profile picture with the specified URL.
-     * @param {string} url The URL of the avatar,
+     * @param {AvatarCache} avatarCache The avatar cache instance,
      */
-    async setAvatar(url) {
-        const avatarData = await super.setAvatar(url);
-        const blobUploadResponse = await bskyClient.uploadBlob(avatarData, {
+    async setAvatar(avatarCache) {
+        const avatarBlob = await avatarCache.fetch({
+            extension: "png",
+            forceStatic: true,
+            size: 512,
+        });
+        const blobUploadResponse = await bskyClient.uploadBlob(avatarBlob, {
             encoding: "image/png",
         });
         await bskyClient.upsertProfile((record => {

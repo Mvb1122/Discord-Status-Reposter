@@ -12,6 +12,7 @@ module.exports = {
 const Mastodon = require('./Mastodon');
 const Bluesky = require('./Bluesky');
 const Network = require('./Network');
+const AvatarCache = require('./AvatarCache');
 
 /**
  * @type {Network[]}
@@ -132,23 +133,16 @@ async function getReferencedMessage(root) {
 }
 
 if (config.discordMirrorAvatarUpdates == true) {
-    /** @type {Discord.ImageURLOptions} */
-    const avatarImageUrlOptions = {
-        extension: "png",
-        forceStatic: true,
-    };
-
     discordClient.on('userUpdate', (oldUser, newUser) => {
         if (oldUser.id !== config.discordUserID) {
             return;
         }
-        const oldAvatarUrl = oldUser.avatarURL(avatarImageUrlOptions);
-        const newAvatarUrl = newUser.avatarURL(avatarImageUrlOptions);
-        if (oldAvatarUrl !== newAvatarUrl) {
+        if (oldUser.avatarURL() !== newUser.avatarURL()) {
             // Avatar changed. Update to applicable networks.
+            const avatarCache = new AvatarCache(newUser);
             networks.forEach(network => {
                 if (network.isEnabled()) {
-                    network.setAvatar(newAvatarUrl).catch((error) => {
+                    network.setAvatar(avatarCache).catch((error) => {
                         console.error(`Failed to update avatar on ${network.constructor.name}`, error)
                     })
                 }
