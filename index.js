@@ -103,6 +103,9 @@ discordClient.on("messageCreate", async (message) => {
             networks.forEach(nw => {
                 if (nw.isEnabled()) nw.replyTo(parent.content, message.content);
             });
+
+            // React to the message so that way the user knows it has been relayed.
+            message.react('✅').catch(console.error);
         }
     }
 })
