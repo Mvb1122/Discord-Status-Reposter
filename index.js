@@ -12,6 +12,7 @@ module.exports = {
 const Mastodon = require('./Mastodon');
 const Bluesky = require('./Bluesky');
 const Network = require('./Network');
+const AvatarCache = require('./AvatarCache');
 
 /**
  * @type {Network[]}
@@ -132,4 +133,23 @@ async function getReferencedMessage(root) {
         .channels.fetch(root.reference.channelId));
 
     return replyChannel.messages.fetch(root.reference.messageId);
+}
+
+if (config.discordMirrorAvatarUpdates == true) {
+    discordClient.on('userUpdate', (oldUser, newUser) => {
+        if (oldUser.id !== config.discordUserID) {
+            return;
+        }
+        if (oldUser.avatarURL() !== newUser.avatarURL()) {
+            // Avatar changed. Update to applicable networks.
+            const avatarCache = new AvatarCache(newUser);
+            networks.forEach(network => {
+                if (network.isEnabled()) {
+                    network.setAvatar(avatarCache).catch((error) => {
+                        console.error(`Failed to update avatar on ${network.constructor.name}`, error)
+                    })
+                }
+            });
+        }
+    });
 }
