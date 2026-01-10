@@ -44,6 +44,8 @@ process.on("beforeExit", () => {
 loadPosts();
 
 class Mastodon extends Network {
+    name = "Mastodon"
+
     /**
      * Logs onto the network.
      * @returns {Promise} Resolves when complete.

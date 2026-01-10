@@ -1,5 +1,11 @@
 class Network {
     /**
+     * Name of this social media network.
+     * @type {String} 
+     */
+    name
+
+    /**
      * Logs onto the network.
      * @returns {Promise} Resolves when complete.
      */

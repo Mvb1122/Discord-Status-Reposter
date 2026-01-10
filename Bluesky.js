@@ -56,6 +56,8 @@ async function fetchPost(post) {
 }
 
 module.exports = class Bluesky extends Network {
+    name = "Bluesky"
+
     /**
      * Logs onto the network.
      * @returns {Promise} Resolves when complete.
