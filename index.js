@@ -39,6 +39,32 @@ Promise.all(loginProms).then(v => {
     console.log("Ready!");
 });
 
+/**
+ * Tries to call a function using exponential falloff in the case of failure. 
+ * @param {VoidFunction} f Function to call.
+ * @param {VoidFunction} onFail Function to call if there's a failure.
+ */
+async function tryCatchExponentialFalloff(f, onFail) {
+    const wait = 1; // 1 second to start.
+    do {
+        try {
+            f(); 
+            break;
+        } catch {
+            // Only call onFail on first failure. 
+            if (wait == 1) onFail(); 
+
+            // Wait for the number of seconds given by `wait`.
+            await new Promise(r => 
+                setTimeout(() => {
+                    r(); 
+                }, 1000 * wait)
+            );
+            wait *= 2; // Double wait time on every failure.
+        }
+    } while (wait <= 1024); // Fail after 10 attempts (2^10 = 1024)
+}
+
 //#region Watch for User's status updating and save it automatically.
     // Fun fact: Because of this function being called async, there's a sad possibility that the same status can be sent multiple times.
     // And because this is in such quick succession (I think I saw like 8 times / sec at one point), I need a variable to track the last one posted,
@@ -46,7 +72,7 @@ Promise.all(loginProms).then(v => {
 let lastStatus = "";
 discordClient.on('presenceUpdate', async (o, newActivity) => {
     try {
-        if (newActivity.activities.length > 0 && (newActivity.status != 'invisible' || newActivity.status != 'offline') && newActivity.userId == config.discordUserID) {
+        if (newActivity != null && newActivity.activities.length > 0 && (newActivity.status != 'invisible' || newActivity.status != 'offline') && newActivity.userId == config.discordUserID) {
             const thisActivity = newActivity.activities[0];
             const emoji = thisActivity.emoji ? thisActivity.emoji.name : "";
             let thisStatus = (emoji + " " + thisActivity.state).trim();
@@ -73,7 +99,12 @@ discordClient.on('presenceUpdate', async (o, newActivity) => {
                     // Send to all enabled networks.
                     networks.forEach(v => {
                         if (v.isEnabled()) {
-                            v.post(thisStatus);
+                            tryCatchExponentialFalloff(
+                                () => {v.post(thisStatus);}, 
+
+                                // If it fails, tell the user.
+                                () => {channel.send("Failed to relay to network: `" + v.name + "`! Trying again!")} // NOTE: Program can crash if Discord is down.
+                            )
                         }
                     })
 
