@@ -48,7 +48,7 @@ async function tryCatchExponentialFalloff(f, onFail) {
     const wait = 1; // 1 second to start.
     do {
         try {
-            f(); 
+            await f(); 
             break;
         } catch {
             // Only call onFail on first failure. 
@@ -127,12 +127,18 @@ discordClient.on("messageCreate", async (message) => {
         let root = await getRootMessage(message);
         const parent = await getReferencedMessage(message);
 
-        if (root.author.id == discordClient.user.id) {
+        if (root.author.id == discordClient.user.id) { // This check is actually useless. 
             console.log("Relaying reply to old message: " + parent.content + "\nWith new message: " + message.content)
 
             // Now we can post replies.
             networks.forEach(nw => {
-                if (nw.isEnabled()) nw.replyTo(parent.content, message.content);
+                if (nw.isEnabled()) 
+                    tryCatchExponentialFalloff(
+                        () => {nw.replyTo(parent.content, message.content);}, 
+
+                        // If it fails, tell the user.
+                        () => {channel.send("Failed to relay reply to network: `" + v.name + "`! Trying again!")} // NOTE: Program can crash if Discord is down.
+                    )
             });
 
             // React to the message so that way the user knows it has been relayed.
@@ -149,7 +155,7 @@ async function getRootMessage(message) {
         // Move up chain of replies.
         root = await getReferencedMessage(root);
     }
-    return root;
+    return root.partial ? await root.fetch() : root;
 }
 
 /**
