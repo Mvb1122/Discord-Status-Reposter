@@ -14,4 +14,5 @@ Mastodon Config:
 
 Bsky Config: 
 1. Make an account. 
-2. Enter your Username and Password into the config (Data will be kept on your device only.)
+2. Make an [App Password](https://bsky.app/settings/app-passwords)
+3. Enter your Username and Password into the config (Data will be kept on your device only.)
