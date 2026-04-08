@@ -7,5 +7,6 @@
     "discordBotToken": "",
     "discordGuildID": "",
     "discordChannelId": "",
-    "discordSuppressNotifications": true
+    "discordSuppressNotifications": true,
+    "discordMirrorAvatarUpdates": false
 }

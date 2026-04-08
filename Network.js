@@ -1,3 +1,5 @@
+/** @import AvatarCache from './AvatarCache'; */
+
 class Network {
     /**
      * Name of this social media network.
@@ -38,6 +40,14 @@ class Network {
      */
     isEnabled() {
         return true;
+    }
+
+    /**
+     * Sets the profile picture from an AvatarCache instance.
+     * @param {AvatarCache} avatarCache The AvatarCache instance.
+     */
+    async setAvatar(avatarCache) {
+
     }
 }
 
