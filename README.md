@@ -9,7 +9,7 @@
 Mastodon Config: 
 1. Make an account. 
 2. Make a an application through that account.
-3. Make sure it has `write:statuses` permission. 
+3. Make sure it has `write:statuses` and `write:accounts` permission. 
 4. Add its access token to the config and enable it.
 
 Bsky Config: 

@@ -102,6 +102,22 @@ class Mastodon extends Network {
     isEnabled() {
         return config.mastodonEnabled;
     }
+
+    /**
+     * Sets the profile picture from an AvatarCache instance.
+     * @param {AvatarCache} avatarCache The AvatarCache instance
+     */
+    async setAvatar(avatarCache) {
+        const avatarBlob = await avatarCache.fetch({
+            extension: "png",
+            forceStatic: true,
+            size: 512,
+        });
+        
+        return masto.v1.accounts.updateCredentials({
+            avatar: avatarBlob
+        });
+    }
 }
 
 module.exports = Mastodon

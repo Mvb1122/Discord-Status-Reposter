@@ -177,13 +177,15 @@ if (config.discordMirrorAvatarUpdates == true) {
         if (oldUser.id !== config.discordUserID) {
             return;
         }
+
         if (oldUser.avatarURL() !== newUser.avatarURL()) {
             // Avatar changed. Update to applicable networks.
+            console.log("Starting avatar update!")
             const avatarCache = new AvatarCache(newUser);
             networks.forEach(network => {
                 if (network.isEnabled()) {
                     network.setAvatar(avatarCache).catch((error) => {
-                        console.error(`Failed to update avatar on ${network.constructor.name}`, error)
+                        console.error(`Failed to update avatar on ${network.constructor.name}\n`, error)
                     })
                 }
             });
