@@ -1,12 +1,12 @@
-const bskyURL = 'https://bsky.social';
 const saveDataPath = "./bsky-posts.json";
 
 const fs = require('fs');
 const { default: AtpAgent } = require("@atproto/api"); // Bluesky AtProtocol bot stuff.
 const { config } = require(".");
 const Network = require("./Network");
-const bskyClient = new AtpAgent({ service: bskyURL });
+const { DidResolver, HandleResolver } = require("@atproto/identity");
 /** @import AvatarCache from './AvatarCache'; */
+/** @import { DidDocument } from '@atproto/identity'; */
 
 /**
  * @type {Map<String, Promise<{uri: string;cid: string;}>>}
@@ -40,31 +40,50 @@ process.on("beforeExit", () => {
     savePosts();
 });
 
-/**
- * @param {{uri: string;cid: string;}} post 
- * @returns {Promise<import('@atproto/api/dist/client/types/app/bsky/feed/defs').PostView>}
- */
-async function fetchPost(post) {
-    return (await bskyClient.getPosts({uris: [post.uri]})).data.posts[0];
-}
+class Resolver {
+    /**
+      * @param {string} handle - The account's handle.
+      * @returns {Promise<DidDocument | null>} The DID document.
+      * @throws {Error} If I am unable to find the specified {@link handle}'s DID document.
+      */
+    static async resolveDidDocumentFromHandle(handle) {
+        const did = await Resolver.#handleResolver.resolve(handle);
+        if (!did) throw new Error("Unable to resolve handle.");
+        const document = await Resolver.#didResolver.resolve(did);
+        return document
+    }
 
-/**
- * @param {{uri: string;cid: string;}} post 
- * @returns {Promise<import('@atproto/api/dist/client/types/app/bsky/feed/defs').PostView>}
- */
-async function fetchPost(post) {
-    return (await bskyClient.getPosts({uris: [post.uri]})).data.posts[0];
+    /**
+      * @param {string} handle - The account's handle.
+      * @returns {Promise<string>} The account's service endpoint.
+      * @throws {Error} If I am unable to find the specified {@link handle}'s PDS.
+      */
+    static async resolveServiceFromHandle(handle) {
+        const document = await Resolver.resolveDidDocumentFromHandle(handle)
+        if (!(document && document.service)) throw new Error("DID document does not specify services.");
+        const service = document.service.find(service => service.id == "#atproto_pds");
+        if (!service) throw new Error("DID document does not specify a personal data server.");
+        if (typeof service.serviceEndpoint !== "string") throw new Error("Service endpoint not found in document.");
+        return service.serviceEndpoint;
+    }
+    static #didResolver = new DidResolver({});
+    static #handleResolver = new HandleResolver({});
 }
 
 module.exports = class Bluesky extends Network {
     name = "Bluesky"
+    // Doesn't quite satisify TypeScript; thinks it could be undefined. Unsure of an elegant solution. Though, it doesn't matter on runtime.
+    /** @type {AtpAgent} */
+    blueskyClient
 
     /**
      * Logs onto the network.
      * @returns {Promise} Resolves when complete.
      */
-    logon() {
-        return bskyClient.login({ identifier: config.bskyName, password: config.bskyPass });
+    async logon() {
+        const serviceEndpoint = await Resolver.resolveServiceFromHandle(config.bskyName);
+        this.bskyClient = new AtpAgent({ service: serviceEndpoint });
+        return await this.bskyClient.login({ identifier: config.bskyName, password: config.bskyPass });
     }
 
     /**
@@ -73,7 +92,7 @@ module.exports = class Bluesky extends Network {
      * @returns {Promise} Resolves when complete.
      */
     post(thisStatus) {
-        let thisPost = bskyClient.post({ text: thisStatus });
+        let thisPost = this.bskyClient.post({ text: thisStatus });
         posts.set(thisStatus, thisPost);
         savePosts(); // Save after every post.
         return thisPost;
@@ -88,7 +107,7 @@ module.exports = class Bluesky extends Network {
     async replyTo(oldText, newText) {
         const parentPost = posts.get(oldText);
         if (parentPost != null) {
-            const parentAsObject = await fetchPost(await parentPost);
+            const parentAsObject = await this.#fetchPost(await parentPost);
             /**
              * I went through the effort of documenting this because apparently it wasn't written down anywhere? See the BlueskyReply file.
              * @type {import('./BlueskyReply').BlueskyReply | undefined}
@@ -96,7 +115,7 @@ module.exports = class Bluesky extends Network {
             const reply = parentAsObject.record.reply; 
             const root = reply ? reply.root : await parentPost;
             
-            const replyPost = bskyClient.post({
+            const replyPost = this.bskyClient.post({
                 text: newText,
                 reply: {
                     parent: await parentPost,
@@ -109,6 +128,14 @@ module.exports = class Bluesky extends Network {
 
             return replyPost;
         }
+    }
+
+    /**
+     * @param {{uri: string;cid: string;}} post 
+     * @returns {Promise<import('@atproto/api/dist/client/types/app/bsky/feed/defs').PostView>}
+     */
+    async #fetchPost(post) {
+        return (await this.bskyClient.getPosts({uris: [post.uri]})).data.posts[0];
     }
     
     /**
@@ -129,10 +156,10 @@ module.exports = class Bluesky extends Network {
             forceStatic: true,
             size: 512,
         });
-        const blobUploadResponse = await bskyClient.uploadBlob(avatarBlob, {
+        const blobUploadResponse = await this.bskyClient.uploadBlob(avatarBlob, {
             encoding: "image/png",
         });
-        await bskyClient.upsertProfile((record => {
+        await this.bskyClient.upsertProfile((record => {
             record.avatar = blobUploadResponse.data.blob
             return record
         }));
